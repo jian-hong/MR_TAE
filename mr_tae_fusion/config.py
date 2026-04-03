@@ -11,19 +11,28 @@ import torch
 
 @dataclass
 class SignalConfig:
-    """Signal generation and processing parameters."""
-    
-    # Sampling parameters (matching MATLAB code)
-    sample_rate: float = 1000e6  # 1 GHz sampling
-    duration: float = 2e-6  # 2 μs duration
-    signal_length: int = 2001  # Number of samples
-    
-    # Pulse parameters
-    dep_tau1_range: tuple = (20e-9, 50e-9)  # Decay time constant
-    dep_tau2_range: tuple = (1e-9, 10e-9)   # Rise time constant
-    dop_tau_range: tuple = (10e-9, 50e-9)   # Damping coefficient
-    dop_fc_range: tuple = (1e6, 300e6)      # Carrier frequency range
-    amplitude_range: tuple = (2.0, 10.0)    # Pulse amplitude
+    """Signal generation and processing parameters.
+
+    Acoustic Emission (AE) sensor band: 20–500 kHz.
+    Sampling at 2 MHz satisfies Nyquist for the 500 kHz upper bound.
+    All time constants in seconds, frequencies in Hz.
+    """
+
+    # Sampling — AE piezoelectric acquisition
+    sample_rate: float = 2e6       # 2 MHz (Nyquist for 500 kHz AE band)
+    duration: float = 1.024e-3     # ~1 ms observation window
+    signal_length: int = 2048      # samples per window
+
+    # DEP (Damped Exponential Pulse) — μs-scale for AE propagation
+    dep_tau1_range: tuple = (10e-6, 80e-6)   # Decay: 10–80 μs
+    dep_tau2_range: tuple = (1e-6, 8e-6)     # Rise:  1–8 μs
+
+    # DOP (Damped Oscillatory Pulse) — kHz carrier within AE band
+    dop_tau_range: tuple = (5e-6, 60e-6)     # Damping: 5–60 μs
+    dop_fc_range: tuple = (30e3, 400e3)      # Carrier: 30–400 kHz
+
+    # Pulse amplitude (normalised to unit peak after generation)
+    amplitude_range: tuple = (0.3, 1.0)
     
     # Class mapping: Types A-G → 5 physics-based classes
     # 0: Background, 1: Corona, 2: Surface, 3: Internal, 4: Treeing
@@ -42,28 +51,46 @@ class SignalConfig:
 
 @dataclass
 class NoiseConfig:
-    """Noise generation parameters."""
-    
-    # Bernoulli-Gaussian impulsive noise
-    impulse_probability: float = 0.01  # Sparsity parameter p
-    impulse_variance_factor: float = 10.0  # σ_imp² >> σ_background²
-    
-    # White Gaussian noise
-    wgn_amplitude: float = 0.08
-    
-    # Powerline interference
-    powerline_freq: float = 50e6
-    powerline_amplitude: float = 0.025
-    harmonic_amplitude: float = 0.015
-    
-    # Narrowband interference
-    narrowband_freq: float = 80e6
-    narrowband_amplitude: float = 0.03
-    
-    # SNR targets for curriculum learning
-    snr_range_phase1: tuple = (0, 10)    # Warm-up: +10 to 0 dB
-    snr_range_phase2: tuple = (-10, 0)   # Robustness: 0 to -10 dB
-    snr_range_phase3: tuple = (-20, -5)  # Reality: -5 to -20 dB
+    """AE-band noise generation parameters.
+
+    Every component maps to a real acquisition source:
+      WGN            → DAQ ADC quantisation + preamp thermal noise
+      Powerline hum  → ground-loop EMI in cable / DAQ chassis
+      Magnetostriction → tank-wall vibration at 2× mains (sensor mount)
+      Mechanical imp. → pump transients, valve clicks, loose parts
+      Machinery tones → bearing harmonics, fan BPF, oil-flow turbulence
+
+    Amplitudes normalised relative to unit-peak PD pulse.
+    Frequencies in Hz, time constants in seconds.
+    """
+
+    # ── Broadband electronics (DAQ + preamp thermal) ──
+    wgn_amplitude: float = 0.04          # σ ∈ [0.02, 0.06]
+
+    # ── Powerline hum (cable-shield / ground-loop coupling) ──
+    powerline_freq: float = 50.0         # 50 Hz (EU/Asia) or 60 Hz (Americas)
+    powerline_amplitude: float = 0.015   # ∈ [0.008, 0.025]
+    harmonic_amplitude: float = 0.008    # per-harmonic decay start
+
+    # ── Magnetostriction (tank-wall 2×mains vibration) ──
+    magnetostriction_amplitude: float = 0.012  # ∈ [0.005, 0.020]
+
+    # ── Narrowband machinery tones (bearings, fans, turbulence) ──
+    narrowband_freq: float = 85e3        # primary tone centre
+    narrowband_amplitude: float = 0.04   # max per tone ∈ [0.02, 0.06]
+    num_machinery_tones: int = 2         # ∈ [1, 3]
+    machinery_freq_range: tuple = (25e3, 200e3)   # Hz
+
+    # ── Mechanical impulse transients (pump, valve, rain, rattles) ──
+    impulse_probability: float = 0.005   # legacy compat — see mechanical model
+    impulse_variance_factor: float = 8.0
+    mechanical_impulse_fc_range: tuple = (30e3, 80e3)   # Hz
+    mechanical_impulse_tau_range: tuple = (3e-6, 15e-6)  # seconds
+
+    # ── SNR targets for curriculum learning ──
+    snr_range_phase1: tuple = (5, 15)    # Easy (PD clearly visible)
+    snr_range_phase2: tuple = (-5, 5)    # Medium (PD partially masked)
+    snr_range_phase3: tuple = (-20, -5)  # Hard (PD buried in noise)
 
 
 @dataclass
@@ -83,7 +110,7 @@ class ModelConfig:
     
     # Input/Output
     in_channels: int = 1
-    signal_length: int = 2001
+    signal_length: int = 2048
     num_classes: int = 5  # Background + Corona + Surface + Internal + Treeing
     
     # MWCNN Encoder
