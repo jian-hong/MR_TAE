@@ -1,0 +1,81 @@
+# Environments
+venv/
+.venv/
+env/
+myenv/
+ENV/
+.env/
+.conda/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Data (heavy, do not upload)
+data/real/
+data/mock/
+data/wgan_generated/
+Data/
+*.mat
+*.csv
+datasets/
+*.npz
+*.npy
+*.hdf5
+
+# Model checkpoints (large binary files)
+checkpoints/
+*.pth
+*.pt
+*.h5
+*.keras
+saved_models/
+outputs/
+*.ckpt
+*.onnx
+
+# Experiment outputs (regeneratable)
+results/**
+!results/.gitkeep
+!results/README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Logs
+*.log
+runs/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Test / cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local scratch / archive
+tmp/
+temp/
+*.tmp
+*.bak
+*.old
+.snapshots/
+archive/
+archives/
