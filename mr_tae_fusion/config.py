@@ -175,6 +175,9 @@ class TrainingConfig:
     # Dice loss weight in segmentation loss
     dice_weight: float = 1.0
     
+    # Charbonnier epsilon for reconstruction (MultiTaskLoss)
+    charbonnier_eps: float = 1e-3
+    
     # Validation
     val_frequency: int = 5  # Validate every N epochs
     

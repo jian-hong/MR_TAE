@@ -158,13 +158,15 @@ class MultiTaskLoss(nn.Module):
         initial_sigma_recon: Initial reconstruction uncertainty
         initial_sigma_seg: Initial segmentation uncertainty
         dice_weight: Weight for Dice loss in segmentation
+        charbonnier_eps: Epsilon for Charbonnier reconstruction loss (HPO-tunable)
     """
     
     def __init__(
         self,
         initial_sigma_recon: float = 1.0,
         initial_sigma_seg: float = 1.0,
-        dice_weight: float = 1.0
+        dice_weight: float = 1.0,
+        charbonnier_eps: float = 1e-3,
     ):
         super().__init__()
         
@@ -177,8 +179,8 @@ class MultiTaskLoss(nn.Module):
             torch.tensor(2.0 * torch.log(torch.tensor(initial_sigma_seg)))
         )
         
-        # Loss functions
-        self.recon_loss = nn.SmoothL1Loss()
+        # Robust reconstruction (Charbonnier); epsilon is exposed for Optuna
+        self.recon_loss = CharbonnierLoss(epsilon=charbonnier_eps)
         self.ce_loss = nn.CrossEntropyLoss()
         self.dice_loss = GeneralizedDiceLoss()
         

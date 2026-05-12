@@ -1,0 +1,48 @@
+models:
+  MR-TAE-FULL:
+    use_wavelet_pooling: true
+    use_bigru: true
+    use_swin: true
+    use_attention_gates: true
+    use_mtl: true
+    loss_config: A
+
+  MR-TAE-noBiGRU:
+    use_wavelet_pooling: true
+    use_bigru: false
+    use_swin: true
+    use_attention_gates: true
+    use_mtl: true
+    loss_config: A
+
+  MR-TAE-noSwin:
+    use_wavelet_pooling: true
+    use_bigru: true
+    use_swin: false
+    use_attention_gates: true
+    use_mtl: true
+    loss_config: A
+
+  MR-TAE-noAttn:
+    use_wavelet_pooling: true
+    use_bigru: true
+    use_swin: true
+    use_attention_gates: false
+    use_mtl: true
+    loss_config: A
+
+  MR-TAE-noMTL:
+    use_wavelet_pooling: true
+    use_bigru: true
+    use_swin: true
+    use_attention_gates: true
+    use_mtl: false
+    loss_config: C
+
+  MR-TAE-noWavelet:
+    use_wavelet_pooling: false
+    use_bigru: true
+    use_swin: true
+    use_attention_gates: true
+    use_mtl: true
+    loss_config: A

@@ -1,0 +1,135 @@
+version: "3.9"
+
+# AE-PD Denoising Research Stack
+# Services:
+#   - trainer:   GPU training + MLflow logging
+#   - dashboard: Flask API + React frontend
+#   - mlflow:    Experiment tracking UI
+#
+# Usage:
+#   docker-compose up                        # all services
+#   docker-compose up dashboard mlflow       # UI only (no training)
+#   docker-compose run trainer python pipeline/mlflow_orchestrator.py --run-all
+
+services:
+
+  # ─── MLflow tracking server ──────────────────────────────────────────────
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: ae_pd_mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlflow/mlruns
+      - ./artifacts:/mlflow/artifacts
+    command: >
+      mlflow server
+        --backend-store-uri sqlite:///mlflow/mlruns/mlflow.db
+        --artifact-root /mlflow/artifacts
+        --host 0.0.0.0
+        --port 5000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─── Research dashboard ──────────────────────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: ae_pd_dashboard
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data:ro              # read-only data mount
+      - ./results:/app/results           # read-write results
+      - ./mlruns:/app/mlruns:ro
+      - ./checkpoints:/app/checkpoints:ro
+      - ./logs:/app/logs:ro
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - FLASK_ENV=production
+    command: python3 dashboard/app.py
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Training container (GPU) ────────────────────────────────────────────
+  trainer:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: ae_pd_trainer
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+      - ./mlruns:/app/mlruns
+      - ./checkpoints:/app/checkpoints
+      - ./logs:/app/logs
+      - ./config:/app/config             # live config edits without rebuild
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    command: >
+      python3 pipeline/mlflow_orchestrator.py --run-all
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    profiles:
+      - training                          # only starts with: docker-compose --profile training up
+
+  # ─── HPO container (GPU) ─────────────────────────────────────────────────
+  hpo:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: ae_pd_hpo
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+      - ./mlruns:/app/mlruns
+      - ./checkpoints:/app/checkpoints
+      - ./config:/app/config
+      - ./hpo:/app/hpo
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - CUDA_VISIBLE_DEVICES=0
+    command: >
+      python3 hpo/optuna_study.py
+        --model MR-TAE-FULL
+        --n-trials 30
+        --objective test_real_ncc
+        --output config/best_hparams.yaml
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    profiles:
+      - hpo
+
+volumes:
+  mlflow_data:
+  results_data:
+
+networks:
+  default:
+    name: ae_pd_network

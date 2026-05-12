@@ -22,9 +22,15 @@ class GenericUNetDenoiser(BaseDenoiser):
 
     MODEL_ID = "generic"
 
-    def __init__(self, cfg: AblationConfig, base_channels: int = 32):
+    def __init__(
+        self,
+        cfg: AblationConfig,
+        base_channels: int = 32,
+        model_id: str = "generic",
+    ):
         super().__init__()
         self.cfg = cfg
+        self.MODEL_ID = model_id
         channels = [base_channels, base_channels * 2, base_channels * 4]
 
         self.enc1 = ConvStack1D(1, channels[0])
@@ -84,35 +90,45 @@ class MRTAEFull(GenericUNetDenoiser):
     MODEL_ID = "MR-TAE-FULL"
 
     def __init__(self):
-        super().__init__(AblationConfig(True, True, True, True, True))
+        super().__init__(
+            AblationConfig(True, True, True, True, True), model_id="MR-TAE-FULL"
+        )
 
 
 class MRTAENoBiGRU(GenericUNetDenoiser):
     MODEL_ID = "MR-TAE-noBiGRU"
 
     def __init__(self):
-        super().__init__(AblationConfig(False, True, True, True, True))
+        super().__init__(
+            AblationConfig(False, True, True, True, True), model_id="MR-TAE-noBiGRU"
+        )
 
 
 class MRTAENoSwin(GenericUNetDenoiser):
     MODEL_ID = "MR-TAE-noSwin"
 
     def __init__(self):
-        super().__init__(AblationConfig(True, False, True, True, True))
+        super().__init__(
+            AblationConfig(True, False, True, True, True), model_id="MR-TAE-noSwin"
+        )
 
 
 class MRTAENoAttn(GenericUNetDenoiser):
     MODEL_ID = "MR-TAE-noAttn"
 
     def __init__(self):
-        super().__init__(AblationConfig(True, True, False, True, True))
+        super().__init__(
+            AblationConfig(True, True, False, True, True), model_id="MR-TAE-noAttn"
+        )
 
 
 class MRTAENoMTL(GenericUNetDenoiser):
     MODEL_ID = "MR-TAE-noMTL"
 
     def __init__(self):
-        super().__init__(AblationConfig(True, True, True, False, True))
+        super().__init__(
+            AblationConfig(True, True, True, False, True), model_id="MR-TAE-noMTL"
+        )
 
 
 class MRTAENoWavelet(GenericUNetDenoiser):
@@ -120,39 +136,51 @@ class MRTAENoWavelet(GenericUNetDenoiser):
 
     def __init__(self):
         # NOTE: current generic model uses maxpool/transpose path by design.
-        super().__init__(AblationConfig(True, True, True, True, False))
+        super().__init__(
+            AblationConfig(True, True, True, True, False), model_id="MR-TAE-noWavelet"
+        )
 
 
 class MWCNNBiGRU(GenericUNetDenoiser):
     MODEL_ID = "MWCNN-BiGRU"
 
     def __init__(self):
-        super().__init__(AblationConfig(True, False, True, True, True))
+        super().__init__(
+            AblationConfig(True, False, True, True, True), model_id="MWCNN-BiGRU"
+        )
 
 
 class MWCNNSwin(GenericUNetDenoiser):
     MODEL_ID = "MWCNN-Swin"
 
     def __init__(self):
-        super().__init__(AblationConfig(False, True, True, True, True))
+        super().__init__(
+            AblationConfig(False, True, True, True, True), model_id="MWCNN-Swin"
+        )
 
 
 class UNetBiGRUSwin(GenericUNetDenoiser):
     MODEL_ID = "UNet-BiGRU-Swin"
 
     def __init__(self):
-        super().__init__(AblationConfig(True, True, False, True, False))
+        super().__init__(
+            AblationConfig(True, True, False, True, False), model_id="UNet-BiGRU-Swin"
+        )
 
 
 class UNetBiGRU(GenericUNetDenoiser):
     MODEL_ID = "UNet-BiGRU"
 
     def __init__(self):
-        super().__init__(AblationConfig(True, False, False, True, False))
+        super().__init__(
+            AblationConfig(True, False, False, True, False), model_id="UNet-BiGRU"
+        )
 
 
 class UNetAttn(GenericUNetDenoiser):
     MODEL_ID = "UNet-Attn"
 
     def __init__(self):
-        super().__init__(AblationConfig(False, False, True, True, False))
+        super().__init__(
+            AblationConfig(False, False, True, True, False), model_id="UNet-Attn"
+        )

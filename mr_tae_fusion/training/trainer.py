@@ -86,7 +86,8 @@ class Trainer:
         self.criterion = MultiTaskLoss(
             initial_sigma_recon=self.train_config.initial_sigma_recon,
             initial_sigma_seg=self.train_config.initial_sigma_seg,
-            dice_weight=self.train_config.dice_weight
+            dice_weight=self.train_config.dice_weight,
+            charbonnier_eps=self.train_config.charbonnier_eps,
         ).to(self.device)
         
         # Optimizer (include loss parameters for uncertainty learning)
